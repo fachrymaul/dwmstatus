@@ -118,7 +118,7 @@ char *
 getbattery(char *base)
 {
 	char *co; 
-        unsigned char status;
+        char *status;
 	int descap, remcap;
         int percentage;
 
@@ -163,17 +163,21 @@ getbattery(char *base)
 
 	co = readfile(base, "status");
 	if (!strncmp(co, "Discharging", 11)) {
-                status = '-';
+                status = "";
 	} else if(!strncmp(co, "Charging", 8)) {
-		status = '+';
+		status = "";
 	} else {
-		status = '?';
+		status = "";
 	}
 
 	if (remcap < 0 || descap < 0)
 		return smprintf("invalid");
+        if(percentage > 100)
+        {
+            percentage = 100;
+        }
 
-	return smprintf("%c:%d%%", status, percentage);
+	return smprintf("%s:%d%%", status, percentage);
 }
 
 char *
@@ -205,7 +209,7 @@ main(void)
 		bat = getbattery("/sys/class/power_supply/BAT0");
 		tmina = mktimes("%a %H:%M %Z %d %b %Y", tzindonesia);
 
-		status = smprintf(" | :%s | %s |  %s",
+		status = smprintf("  |  :%s | %s |  %s",
 				 avgs, bat, tmina);
 		setstatus(status);
 
