@@ -3,6 +3,7 @@
 include config.mk
 
 SRC = ${NAME}.c
+SRC += audio_volume.c
 OBJ = ${SRC:.c=.o}
 
 all: options ${NAME}

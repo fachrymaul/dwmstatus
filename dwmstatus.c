@@ -3,7 +3,6 @@
  * by 20h
  */
 
-#define _BSD_SOURCE
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,10 +16,9 @@
 
 #include <X11/Xlib.h>
 
-char *tzargentina = "America/Buenos_Aires";
+#include "audio_volume.h"
+
 char *tzindonesia = "Asia/Jakarta";
-char *tzutc = "UTC";
-char *tzberlin = "Europe/Berlin";
 
 static Display *dpy;
 
@@ -191,6 +189,31 @@ gettemperature(char *base, char *sensor)
 	return smprintf("%02.0f°C", atof(co) / 1000);
 }
 
+char *
+get_brightness(char *base)
+{
+        char *co;
+        int max_brightness;
+        int brightness;
+        int percentage;
+
+        co = readfile(base, "max_brightness");
+        if (co == NULL)
+                return 0;
+        sscanf(co, "%d", &max_brightness);
+
+        free(co);
+
+        co = readfile(base, "brightness");
+        if (co == NULL)
+                return 0;
+        sscanf(co, "%d", &brightness);
+        
+        percentage = brightness * 100 / max_brightness;
+
+        return smprintf("%d", percentage);
+}
+
 int
 main(void)
 {
@@ -198,25 +221,30 @@ main(void)
 	char *avgs;
 	char *bat;
 	char *tmina;
+        char *brightness;
+        int volume;
 
 	if (!(dpy = XOpenDisplay(NULL))) {
 		fprintf(stderr, "dwmstatus: cannot open display.\n");
 		return 1;
 	}
 
-	for (;;sleep(60)) {
+	for (;;sleep(1)) {
 		avgs = loadavg();
 		bat = getbattery("/sys/class/power_supply/BAT0");
 		tmina = mktimes("%a %H:%M %Z %d %b %Y", tzindonesia);
+                brightness = get_brightness("/sys/class/backlight/intel_backlight");
+                volume = audio_volume();
 
-		status = smprintf("  |  :%s | %s |  %s",
-				 avgs, bat, tmina);
+		status = smprintf("  |  : %s |  : %d |  :%s | %s |  %s",
+				 brightness, volume, avgs, bat, tmina);
 		setstatus(status);
 
 		free(avgs);
 		free(bat);
 		free(tmina);
 		free(status);
+                free(brightness);
 	}
 
 	XCloseDisplay(dpy);
